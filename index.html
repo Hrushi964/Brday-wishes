@@ -310,7 +310,7 @@ function detectBlow() {
   const volume = dataArray.reduce((a,b)=>a+b) / dataArray.length;
   
   // Threshold increased from 60 to 125
-  if(volume > 70) { 
+  if(volume > 50) { 
       blowConsistentCount++;
   } else {
       blowConsistentCount = 0; // Reset if sound drops
