@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Birthday Wishes – Sir</title>
+
 <!-- Import Confetti Library -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
@@ -57,49 +58,89 @@
     gap: 40px;
   }
 
-  .text-section { flex: 1; text-align: left; }
-  .image-section { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; }
+  .text-section { flex: 1; text-align: left; position: relative; }
+  .image-section { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; position: relative; }
 
   h1 { color:#d8b44a; margin-top:0; line-height: 1.2; }
   .message { font-size:18px; line-height:1.6; margin-bottom: 20px; color: #e0e0e0; }
   
-  .cake-wrapper { position: relative; display: inline-block; max-width: 100%; width: 350px; }
+  /* cake container (holds halves for slicing) */
+  .cake-wrapper {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    width: 350px;
+    height: auto;
+    user-select: none;
+    touch-action: none; /* allow custom touch handling */
+  }
+
+  /* original cake image (hidden when halves are shown) */
   .cake-photo { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.6); display: block; }
 
-  /* CANDLE & FLAME */
-  .candle-container {
+  /* halves that will show the split */
+  .cake-half {
     position: absolute;
-    top: 17%; 
+    top: 0;
+    width: 50%;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    transition: transform 800ms cubic-bezier(.2,.9,.2,1), opacity 300ms;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.45);
+    background-repeat: no-repeat;
+    background-size: cover;
+    will-change: transform;
+  }
+  .cake-half.left { left: 0; transform-origin: right center; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .cake-half.right { right: 0; transform-origin: left center; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+
+  /* small cut line that appears during swipe */
+  .cut-line {
+    position: absolute;
+    width: 2px;
+    height: 100%;
+    background: rgba(255,255,255,0.6);
+    top: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 20px; height: 60px; z-index: 10;
-  }
-  
-  .candle-stick {
-    width: 6px; height: 40px;
-    background: repeating-linear-gradient(45deg, #fdf5e6, #fdf5e6 5px, #e6ddc5 5px, #e6ddc5 8px);
-    margin: 0 auto; border-radius: 3px; position: relative; top: 20px;
-    box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms, transform 200ms;
+    mix-blend-mode: screen;
   }
 
-  .flame {
-    width: 8px; height: 20px;
-    background: radial-gradient(ellipse at bottom, #ffd700, #ffa500, #ff4500);
-    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-    position: absolute; top: 1px; left: 48%; transform: translateX(-50%);
-    box-shadow: 0 0 10px #ffd700, 0 0 20px #ffa500;
-    animation: flicker 0.1s infinite alternate;
-    transition: opacity 0.5s ease;
-    transform-origin: center bottom;
+  /* ---- ✨ CHEMKIS (SPARKLES) -- Light Density Around Text + Cake ---- */
+  .chemki {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: radial-gradient(circle, #ffd700, #ffb300, #ff9800);
+    border-radius: 50%;
+    box-shadow: 0 0 8px #ffd700, 0 0 12px #ff9800;
+    opacity: 0;
+    animation: chemkiGlow 1.4s infinite ease-in-out;
+    pointer-events: none;
   }
-  @keyframes flicker {
-    0% { transform: translateX(-50%) scale(1); opacity: 0.9; }
-    100% { transform: translateX(-50%) scale(1.1); opacity: 1; }
+
+  @keyframes chemkiGlow {
+    0% { transform: scale(0.5); opacity: 0.2; }
+    50% { transform: scale(1.3); opacity: 1; }
+    100% { transform: scale(0.5); opacity: 0.2; }
   }
-  .flame.out { opacity: 0; animation: none; }
+
+  #chemki-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+  }
 
   .note { margin-top:15px; font-size:13px; color:#9aa7b6; }
-  
+
   #start-btn {
     background: #d8b44a; color: #111726; border: none; padding: 12px 25px;
     border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 20px; font-size: 14px;
@@ -107,7 +148,7 @@
   }
   #start-btn:hover { background: #c5a23d; }
 
-  /* --- VIEW 2: FINAL ANIMATION --- */
+  /* --- VIEW 2: FINAL CELEBRATION --- */
   #final-view {
     display: none;
     position: absolute;
@@ -118,318 +159,411 @@
     z-index: 20;
   }
 
-  /* Container for Text and Pots */
+  /* celebration layout */
   .celebration-layout {
     display: flex;
-    align-items: flex-end; /* Align pots to bottom of text */
+    align-items: flex-end;
     justify-content: center;
-    gap: 30px; /* Space between pots and text */
+    gap: 30px;
     position: relative;
     z-index: 30;
   }
 
-  .text-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .pop-text {
-    font-weight: 900;
-    text-transform: uppercase;
-    opacity: 0;
-    margin: 5px 0;
-    text-shadow: 0 0 10px rgba(216, 180, 74, 0.3);
-    text-align: center;
-  }
-
+  .text-group { display: flex; flex-direction: column; align-items: center; }
+  .pop-text { font-weight: 900; text-transform: uppercase; opacity: 0; margin: 5px 0; text-align: center; text-shadow: 0 0 10px rgba(216,180,74,0.3); }
   .txt-1 { color: #fff; font-size: 1.5rem; letter-spacing: 2px; }
   .txt-2 { color: #d8b44a; font-size: 3.5rem; letter-spacing: 1px; line-height: 1.1; }
   .txt-3 { color: #f5f5f5; font-size: 2rem; letter-spacing: 1px; margin-top: 15px; }
 
-  /* FLOWER POT STYLES */
-  .flower-pot {
-    width: 40px;
-    height: 50px;
-    background: linear-gradient(to right, #b8860b, #ffd700, #b8860b);
-    clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
-    position: relative;
-    opacity: 0; /* Hidden until animation starts */
-    transition: opacity 0.5s;
-  }
-  /* Fuse visual */
-  .flower-pot::before {
-    content: '';
-    position: absolute;
-    top: -10px; left: 50%; transform: translateX(-50%);
-    width: 2px; height: 10px; background: #fff;
-  }
+  .flower-pot { width: 40px; height: 50px; background: linear-gradient(to right, #b8860b, #ffd700, #b8860b); clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%); position: relative; opacity: 0; transition: opacity 0.5s; }
+  .flower-pot::before { content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 2px; height: 10px; background: #fff; }
 
-  /* Animations Classes */
-  .anim-top-left { animation: flyInTopLeft 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-  @keyframes flyInTopLeft {
-    0% { transform: translate(-100vw, -100vh) rotate(-20deg); opacity: 0; }
-    100% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
-  }
+  @keyframes flyInTopLeft { 0% { transform: translate(-100vw, -100vh) rotate(-20deg); opacity: 0; } 100% { transform: translate(0,0) rotate(0deg); opacity: 1; } }
+  @keyframes flyInTopRight { 0% { transform: translate(100vw, -100vh) rotate(20deg); opacity: 0; } 100% { transform: translate(0,0) rotate(0deg); opacity: 1; } }
+  @keyframes flyInBottom { 0% { transform: translate(0,100vh) scale(0.5); opacity: 0; } 100% { transform: translate(0,0) scale(1); opacity: 1; } }
 
-  .anim-top-right { animation: flyInTopRight 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; animation-delay: 0.3s; }
-  @keyframes flyInTopRight {
-    0% { transform: translate(100vw, -100vh) rotate(20deg); opacity: 0; }
-    100% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
-  }
+  .anim-top-left { animation: flyInTopLeft 1.2s cubic-bezier(.175,.885,.32,1.275) forwards; }
+  .anim-top-right { animation: flyInTopRight 1.2s cubic-bezier(.175,.885,.32,1.275) forwards; animation-delay: 0.3s; }
+  .anim-bottom { animation: flyInBottom 1.2s cubic-bezier(.175,.885,.32,1.275) forwards; animation-delay: 0.8s; }
 
-  .anim-bottom { animation: flyInBottom 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; animation-delay: 0.8s; }
-  @keyframes flyInBottom {
-    0% { transform: translate(0, 100vh) scale(0.5); opacity: 0; }
-    100% { transform: translate(0, 0) scale(1); opacity: 1; }
-  }
-
-  /* BALLOON STYLES */
-  .balloon {
-    position: absolute;
-    bottom: -100px; 
-    width: 35px; height: 45px;
-    border-radius: 50%;
-    z-index: 25;
-    opacity: 0.9;
-    box-shadow: inset -3px -3px 10px rgba(0,0,0,0.3);
-  }
-  .balloon::after {
-    content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
-    width: 2px; height: 25px; background: rgba(255,255,255,0.5);
-  }
-  @keyframes fallDown {
-    0% { transform: translateY(-120vh); opacity: 1; }
-    100% { transform: translateY(100vh); opacity: 0; }
-  }
+  /* balloons */
+  .balloon { position: absolute; bottom: -100px; width: 35px; height: 45px; border-radius: 50%; z-index: 25; opacity: 0.9; box-shadow: inset -3px -3px 10px rgba(0,0,0,0.3); }
+  .balloon::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 2px; height: 25px; background: rgba(255,255,255,0.5); }
+  @keyframes fallDown { 0% { transform: translateY(-120vh); opacity: 1; } 100% { transform: translateY(100vh); opacity: 0; } }
 
   @media (max-width: 768px) {
     .row { flex-direction: column; gap: 30px; }
     .text-section { text-align: center; }
     .cake-wrapper { width: 100%; max-width: 300px; }
-    /* Adjust layout for phone to stack pots or shrink them */
     .celebration-layout { gap: 10px; }
     .flower-pot { width: 25px; height: 35px; }
     .txt-1 { font-size: 1rem; }
     .txt-2 { font-size: 1.8rem; }
     .txt-3 { font-size: 1.2rem; }
   }
+
 </style>
 </head>
 <body>
 
+<!-- Background Music -->
+<audio id="bgm" src="audio/music.mp3" preload="auto" loop></audio>
+
 <div class="card" id="main-card">
   
-  <!-- VIEW 1: INITIAL CONTENT -->
+  <!-- chemkis -->
+  <div id="chemki-area"></div>
+
+  <!-- VIEW 1 -->
   <div id="initial-view">
     <div class="row">
       <div class="text-section">
         <h1>Best Wishes on Your Birthday, <br><span style="color:#d8b44a">Sir Lokesh Jella</span></h1>
+
         <p class="message">
           Sir, I wish you a happy birthday. Thank you for your consistent guidance and for fostering a results-driven,
           supportive environment. Your professionalism and commitment inspire the team daily.
           Wishing you a year of continued achievements, good health, and meaningful progress in all your endeavors.
         </p>
 
-        <button id="start-btn" onclick="initMic()">Enable Microphone to Blow Candle</button>
+        <!-- Button: starts BGM & triggers cut for non-swipe users -->
+        <button id="start-btn" onclick="startBGM(); sliceCake();">Cut Cake</button>
       </div>
 
       <div class="image-section">
-        <div class="cake-wrapper">
-          <img src="images/cake.png" alt="Birthday Cake" class="cake-photo">
-          
-          <div class="candle-container">
-            <div id="flame" class="flame"></div>
-            <div class="candle-stick"></div>
-          </div>
+        <!-- CAKE WRAPPER - contains halves for slicing -->
+        <div class="cake-wrapper" id="cake-wrapper" aria-label="Cake. Swipe to cut.">
+          <!-- original image (will be hidden once halves are prepared) -->
+          <!-- PREVIEW: using uploaded path so preview shows correctly. When deploying, change src to images/cake.png if you prefer. -->
+          <img id="orig-cake" src="images/cake.png" alt="Birthday Cake" class="cake-photo">
+
+          <!-- halves (initially hidden until we prepare them) -->
+          <div class="cake-half left" id="cake-left" style="opacity:0;"></div>
+          <div class="cake-half right" id="cake-right" style="opacity:0;"></div>
+
+          <!-- thin cut line -->
+          <div class="cut-line" id="cut-line"></div>
         </div>
-        <p class="note">Blow into the microphone to extinguish the candle</p>
+
+        <p class="note">Swipe across the cake to cut it (or click "Cut Cake")</p>
       </div>
     </div>
   </div>
 
-  <!-- VIEW 2: FINAL CELEBRATION -->
+  <!-- VIEW 2 -->
   <div id="final-view">
-    
-    <!-- Container to hold Pots and Text side-by-side -->
     <div class="celebration-layout">
-        <!-- Left Pot -->
-        <div id="pot-left" class="flower-pot"></div>
+      <div id="pot-left" class="flower-pot"></div>
 
-        <!-- Text Center -->
-        <div class="text-group">
-            <div class="pop-text txt-1" id="msg-1">ONCE AGAIN</div>
-            <div class="pop-text txt-2" id="msg-2">HAPPY BIRTHDAY</div>
-            <div class="pop-text txt-3" id="msg-3">TO YOU SIR</div>
-        </div>
+      <div class="text-group">
+          <div class="pop-text txt-1" id="msg-1">ONCE AGAIN</div>
+          <div class="pop-text txt-2" id="msg-2">HAPPY BIRTHDAY</div>
+          <div class="pop-text txt-3" id="msg-3">TO YOU SIR</div>
+      </div>
 
-        <!-- Right Pot -->
-        <div id="pot-right" class="flower-pot"></div>
+      <div id="pot-right" class="flower-pot"></div>
     </div>
-
   </div>
 
 </div>
 
 <script>
-let audioContext;
-let analyser;
-let dataArray;
-let mic;
-let isListening = false;
-let blowConsistentCount = 0; // To track sustained blowing
+/* ----------------------
+   BGM: start on first touch/click (iPhone-safe)
+   ---------------------- */
+let bgmStarted = false;
+function startBGM() {
+  if (bgmStarted) return;
+  bgmStarted = true;
+  const bgm = document.getElementById('bgm');
+  bgm.volume = 1.0;
+  bgm.play().catch(() => { bgmStarted = false; });
+}
+window.addEventListener('touchstart', startBGM, { once: true });
+window.addEventListener('click', startBGM, { once: true });
 
-async function initMic() {
-  if (isListening) return;
-  try {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    mic = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const source = audioContext.createMediaStreamSource(mic);
-    analyser = audioContext.createAnalyser();
-    analyser.fftSize = 512;
-    dataArray = new Uint8Array(analyser.frequencyBinCount);
-    source.connect(analyser);
-    isListening = true;
-    document.getElementById('start-btn').style.display = 'none'; 
-    detectBlow();
-  } catch (e) {
-    console.error(e);
-    alert("Microphone access denied. Please allow microphone permissions.");
+/* ----------------------
+   Chemkis
+-------------------------*/
+function startChemkis() {
+  const area = document.getElementById("chemki-area");
+  const count = 40; // light density
+  for (let i = 0; i < count; i++) {
+    const spark = document.createElement("div");
+    spark.classList.add("chemki");
+    spark.style.left = Math.random() * 100 + "%";
+    spark.style.top = Math.random() * 100 + "%";
+    spark.style.animationDelay = (Math.random() * 1.5) + "s";
+    area.appendChild(spark);
   }
 }
+startChemkis();
 
-/* 
-   UPDATED SENSITIVITY LOGIC:
-   1. Increased Threshold to 125 (requires louder sound).
-   2. Added 'blowConsistentCount': Sound must be loud for 5 consecutive frames 
-      to filter out sudden claps/background noise.
-*/
-function detectBlow() {
-  requestAnimationFrame(detectBlow);
-  analyser.getByteFrequencyData(dataArray);
-  const volume = dataArray.reduce((a,b)=>a+b) / dataArray.length;
-  
-  // Threshold increased from 60 to 125
-  if(volume > 30) { 
-      blowConsistentCount++;
-  } else {
-      blowConsistentCount = 0; // Reset if sound drops
-  }
-
-  // If sustained for ~5 frames (approx 100ms), trigger blow
-  if (blowConsistentCount > 1) {
-      blowCandle();
-  }
+/* ----------------------
+   Confetti utility (used later)
+-------------------------*/
+function fireConfettiFrom(xFrac, yFrac, duration=2000) {
+  const durationMs = duration;
+  const end = Date.now() + durationMs;
+  const defaults = { startVelocity: 45, spread: 60, ticks: 100, zIndex: 100, gravity: 1.2 };
+  const interval = setInterval(() => {
+    const timeLeft = end - Date.now();
+    if (timeLeft <= 0) return clearInterval(interval);
+    const particleCount = Math.floor(50 * (timeLeft / durationMs));
+    confetti(Object.assign({}, defaults, { particleCount, origin: { x: xFrac, y: yFrac }, colors: ['#FFD700', '#FFA500', '#fff'] }));
+  }, 100);
 }
 
-function blowCandle() {
-  const flame = document.getElementById("flame");
-  if(flame.classList.contains('out')) return;
-
-  // 1. Extinguish flame
-  flame.classList.add('out');
-
-  // 2. Wait 1 second, then fade out the current card
-  setTimeout(() => {
-    const initialView = document.getElementById('initial-view');
-    initialView.classList.add('fade-out-scene');
-
-    // 3. Wait for fade out to complete, then show new view
-    setTimeout(() => {
-        initialView.style.display = 'none';
-        
-        const finalView = document.getElementById('final-view');
-        finalView.style.display = 'flex'; 
-
-        // Trigger Text Animations
-        document.getElementById('msg-1').classList.add('anim-top-left');
-        document.getElementById('msg-2').classList.add('anim-top-right');
-        document.getElementById('msg-3').classList.add('anim-bottom');
-
-        // Trigger Falling Balloons
-        startBalloons();
-
-        // Trigger Flowerpots (Delay: 2.0s so text is visible first)
-        setTimeout(() => {
-            // Show the pots
-            document.getElementById('pot-left').style.opacity = '1';
-            document.getElementById('pot-right').style.opacity = '1';
-            
-            // Fire sparks
-            fireSourceCrackers();
-        }, 2000);
-
-    }, 800); 
-
-  }, 1000);
-}
-
-/* --- BALLOONS FALLING FROM TOP --- */
+/* ----------------------
+   Balloons
+-------------------------*/
 function startBalloons() {
-    const colors = ['#ff4d4d', '#4dff4d', '#4d4dff', '#ffff4d', '#ff4dff', '#4dffff', '#d8b44a'];
-    const container = document.getElementById('final-view');
-    
-    for(let i=0; i<30; i++) {
-        const b = document.createElement('div');
-        b.classList.add('balloon');
-        b.style.background = colors[Math.floor(Math.random()*colors.length)];
-        b.style.left = Math.random() * 90 + '%'; 
-        b.style.animation = `fallDown ${Math.random()*2 + 3}s linear forwards`; 
-        b.style.top = '-100px';
-        
-        setTimeout(() => {
-            container.appendChild(b);
-        }, Math.random() * 2000);
-    }
+  const colors = ['#ff4d4d', '#4dff4d', '#4d4dff', '#ffff4d', '#ff4dff', '#4dffff', '#d8b44a'];
+  const container = document.getElementById('final-view');
+  for (let i = 0; i < 30; i++) {
+    const b = document.createElement('div');
+    b.classList.add('balloon');
+    b.style.background = colors[Math.floor(Math.random() * colors.length)];
+    b.style.left = Math.random() * 90 + '%';
+    b.style.animation = `fallDown ${Math.random()*2 + 3}s linear forwards`;
+    b.style.top = '-100px';
+    setTimeout(() => container.appendChild(b), Math.random() * 2000);
+  }
 }
 
-/* --- FLOWERPOT CRACKERS (Positioned accurately) --- */
-function fireSourceCrackers() {
-    // 1. Get position of the Left Pot
-    const potLeft = document.getElementById('pot-left').getBoundingClientRect();
-    const potRight = document.getElementById('pot-right').getBoundingClientRect();
+/* ----------------------
+   Final celebration (same flow as earlier blowCandle)
+-------------------------*/
+function revealFinalScene() {
+  const initialView = document.getElementById('initial-view');
+  initialView.classList.add('fade-out-scene');
+
+  setTimeout(() => {
+    initialView.style.display = 'none';
     
-    // 2. Calculate normalized X/Y (0 to 1) for the library
-    // We add width/2 to X to shoot from center of pot
-    const leftX = (potLeft.left + potLeft.width / 2) / window.innerWidth;
-    const leftY = (potLeft.top) / window.innerHeight; // Shoot from top of pot
+    const finalView = document.getElementById('final-view');
+    finalView.style.display = 'flex';
 
-    const rightX = (potRight.left + potRight.width / 2) / window.innerWidth;
-    const rightY = (potRight.top) / window.innerHeight;
+    document.getElementById('msg-1').classList.add('anim-top-left');
+    document.getElementById('msg-2').classList.add('anim-top-right');
+    document.getElementById('msg-3').classList.add('anim-bottom');
 
-    const duration = 3000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 45, spread: 60, ticks: 100, zIndex: 100, gravity: 1.2 };
+    startBalloons();
 
-    const interval = setInterval(function() {
-        const timeLeft = animationEnd - Date.now();
+    setTimeout(() => {
+      document.getElementById('pot-left').style.opacity = '1';
+      document.getElementById('pot-right').style.opacity = '1';
+      // Fire confetti from left and right pot positions
+      const potLeft = document.getElementById('pot-left').getBoundingClientRect();
+      const potRight = document.getElementById('pot-right').getBoundingClientRect();
+      const lx = (potLeft.left + potLeft.width/2) / window.innerWidth;
+      const ly = potLeft.top / window.innerHeight;
+      const rx = (potRight.left + potRight.width/2) / window.innerWidth;
+      const ry = potRight.top / window.innerHeight;
+      fireConfettiFrom(lx, ly, 3000);
+      fireConfettiFrom(rx, ry, 3000);
+    }, 1200);
 
-        if (timeLeft <= 0) {
-            return clearInterval(interval);
-        }
-
-        const particleCount = 50 * (timeLeft / duration);
-
-        // Left Fountain
-        confetti(Object.assign({}, defaults, { 
-            particleCount,
-            origin: { x: leftX, y: leftY },
-            colors: ['#FFD700', '#FFA500', '#fff'],
-            angle: 90, // Straight up
-            drift: 0
-        }));
-
-        // Right Fountain
-        confetti(Object.assign({}, defaults, { 
-            particleCount,
-            origin: { x: rightX, y: rightY },
-            colors: ['#FFD700', '#FFA500', '#fff'],
-            angle: 90, // Straight up
-            drift: 0
-        }));
-
-    }, 100);
+  }, 700);
 }
+
+/* ----------------------
+   Slice/cut logic
+   - Uses single image, creates two halves with same background image
+   - Handles touch and mouse swipe/drag
+-------------------------*/
+const cakeWrapper = document.getElementById('cake-wrapper');
+const origCake = document.getElementById('orig-cake');
+const leftHalf = document.getElementById('cake-left');
+const rightHalf = document.getElementById('cake-right');
+const cutLine = document.getElementById('cut-line');
+
+let cakeWidth = 0, cakeHeight = 0;
+let startX = null, startY = null;
+let dragging = false;
+let cutPerformed = false;
+
+function prepareHalves() {
+  // get natural size from image or bounding box
+  cakeWidth = origCake.clientWidth;
+  cakeHeight = origCake.clientHeight;
+
+  // use the same image URL (preview path). For deployment change to images/cake.png if needed.
+  const imgUrl = origCake.getAttribute('src');
+
+  // style halves background to visualize left/right parts
+  leftHalf.style.backgroundImage = `url("${imgUrl}")`;
+  rightHalf.style.backgroundImage = `url("${imgUrl}")`;
+
+  // set background positions so left shows left half, right shows right half
+  leftHalf.style.backgroundPosition = 'left center';
+  rightHalf.style.backgroundPosition = 'right center';
+
+  // set background size to cover the wrapper size
+  leftHalf.style.backgroundSize = 'cover';
+  rightHalf.style.backgroundSize = 'cover';
+
+  // size halves to cake size (height in px)
+  leftHalf.style.height = cakeHeight + 'px';
+  rightHalf.style.height = cakeHeight + 'px';
+  leftHalf.style.opacity = '1';
+  rightHalf.style.opacity = '1';
+
+  // ensure wrapper has explicit height to keep halves positioned correctly
+  cakeWrapper.style.height = cakeHeight + 'px';
+
+  // hide the original image (we'll show halves)
+  origCake.style.opacity = '0';
+  origCake.style.pointerEvents = 'none';
+}
+
+// only prepare halves once image is loaded & layout stable
+function ensurePrepared() {
+  if (!origCake.complete) {
+    origCake.addEventListener('load', prepareHalves, { once: true });
+  } else {
+    prepareHalves();
+  }
+}
+ensurePrepared();
+
+/* perform the slice animation (called on swipe or button) */
+function sliceCake(direction = 'left-to-right') {
+  if (cutPerformed) return;
+  cutPerformed = true;
+
+  // ensure halves ready
+  ensurePrepared();
+
+  // show a subtle cut line
+  cutLine.style.opacity = '1';
+  setTimeout(() => cutLine.style.opacity = '0', 600);
+
+  // animate halves apart
+  if (direction === 'left-to-right') {
+    leftHalf.style.transform = 'translateX(-60%) rotate(-6deg)';
+    rightHalf.style.transform = 'translateX(60%) rotate(6deg)';
+  } else {
+    leftHalf.style.transform = 'translateX(-60%) rotate(-6deg)';
+    rightHalf.style.transform = 'translateX(60%) rotate(6deg)';
+  }
+
+  // small delay then trigger celebration
+  setTimeout(() => {
+    // small confetti burst from cake center
+    const rect = cakeWrapper.getBoundingClientRect();
+    const cx = (rect.left + rect.width/2) / window.innerWidth;
+    const cy = (rect.top + rect.height/2) / window.innerHeight;
+    fireConfettiFrom(cx, cy, 1800);
+
+    // reveal final scene (keeps music playing)
+    revealFinalScene();
+  }, 700);
+}
+
+/* ---------- Swipe / Drag handlers ---------- */
+function onPointerStart(x, y) {
+  if (cutPerformed) return;
+  startX = x;
+  startY = y;
+  dragging = true;
+  cutLine.style.opacity = '0.8';
+  cutLine.style.transform = `translateX(${0}px)`;
+}
+function onPointerMove(x, y) {
+  if (!dragging || startX === null) return;
+  const dx = x - startX;
+  // move cut-line visually by dx (bounded)
+  const maxMove = cakeWrapper.clientWidth/2;
+  const move = Math.max(-maxMove, Math.min(maxMove, dx));
+  cutLine.style.transform = `translateX(${move}px)`;
+}
+function onPointerEnd(x, y) {
+  if (!dragging) return;
+  dragging = false;
+  cutLine.style.opacity = '0';
+  const dx = x - startX;
+  const absDx = Math.abs(dx || 0);
+  // treat as swipe if significant horizontal movement
+  if (absDx > 50) {
+    const dir = dx > 0 ? 'left-to-right' : 'right-to-left';
+    sliceCake(dir);
+  }
+  startX = null;
+  startY = null;
+}
+
+/* touch events */
+cakeWrapper.addEventListener('touchstart', (e) => {
+  if (cutPerformed) return;
+  const t = e.touches[0];
+  onPointerStart(t.clientX, t.clientY);
+}, { passive: true });
+
+cakeWrapper.addEventListener('touchmove', (e) => {
+  if (!dragging) return;
+  const t = e.touches[0];
+  onPointerMove(t.clientX, t.clientY);
+}, { passive: true });
+
+cakeWrapper.addEventListener('touchend', (e) => {
+  if (cutPerformed) return;
+  // touchend has no touches, use changedTouches
+  const t = e.changedTouches[0];
+  onPointerEnd(t.clientX, t.clientY);
+}, { passive: true });
+
+/* mouse events for desktop */
+let mouseDown = false;
+cakeWrapper.addEventListener('mousedown', (e) => {
+  if (cutPerformed) return;
+  mouseDown = true;
+  onPointerStart(e.clientX, e.clientY);
+});
+window.addEventListener('mousemove', (e) => {
+  if (!mouseDown) return;
+  onPointerMove(e.clientX, e.clientY);
+});
+window.addEventListener('mouseup', (e) => {
+  if (!mouseDown) return;
+  mouseDown = false;
+  onPointerEnd(e.clientX, e.clientY);
+});
+
+/* also allow keyboard Enter on wrapper to trigger cut (accessibility) */
+cakeWrapper.setAttribute('tabindex', '0');
+cakeWrapper.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    sliceCake();
+  }
+});
+
+/* ----------------------
+   Start BGM also on explicit Cut button click (already wired in markup)
+-------------------------*/
+/* startBGM() is called by the button's onclick */
+
+/* ----------------------
+   Fire initial tiny confetti periodically around cake while idle (subtle)
+-------------------------*/
+let idleConfettiInterval = setInterval(() => {
+  if (cutPerformed) return;
+  const rect = cakeWrapper.getBoundingClientRect();
+  const cx = (rect.left + rect.width/2) / window.innerWidth;
+  const cy = (rect.top + rect.height*0.6) / window.innerHeight;
+  confetti({ particleCount: 8, startVelocity: 20, spread: 40, origin: { x: cx, y: cy }, colors: ['#ffd700','#fff'] });
+}, 4500);
+
+/* Stop idle confetti once cut performed */
+function stopIdleConfetti() {
+  clearInterval(idleConfettiInterval);
+}
+const originalSliceCake = sliceCake;
+sliceCake = function(dir) {
+  stopIdleConfetti();
+  originalSliceCake(dir);
+};
+
 </script>
 </body>
 </html>
