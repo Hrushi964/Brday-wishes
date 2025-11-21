@@ -69,7 +69,7 @@
   /* CANDLE & FLAME */
   .candle-container {
     position: absolute;
-    top: 18%; 
+    top: 17%; 
     left: 50%;
     transform: translateX(-50%);
     width: 20px; height: 60px; z-index: 10;
@@ -310,14 +310,14 @@ function detectBlow() {
   const volume = dataArray.reduce((a,b)=>a+b) / dataArray.length;
   
   // Threshold increased from 60 to 125
-  if(volume > 125) { 
+  if(volume > 70) { 
       blowConsistentCount++;
   } else {
       blowConsistentCount = 0; // Reset if sound drops
   }
 
   // If sustained for ~5 frames (approx 100ms), trigger blow
-  if (blowConsistentCount > 5) {
+  if (blowConsistentCount > 2) {
       blowCandle();
   }
 }
