@@ -208,7 +208,27 @@
 
 <!-- Background Music -->
 <audio id="bgm" src="audio/music.mp3" preload="auto" loop></audio>
-
+<script>
+  /* Universal iPhone-safe autoplay trigger */
+  let bgmActivated = false;
+  
+  function activateBGM() {
+    if (bgmActivated) return;
+    bgmActivated = true;
+    const bgm = document.getElementById("bgm");
+  
+    bgm.play().catch(() => {
+        bgmActivated = false; 
+    });
+  }
+  
+  /* Play BGM on ANY first user interaction */
+  window.addEventListener("touchstart", activateBGM, { once: true });
+  window.addEventListener("touchend", activateBGM, { once: true });
+  window.addEventListener("mousedown", activateBGM, { once: true });
+  window.addEventListener("click", activateBGM, { once: true });
+</script>
+  
 <div class="card" id="main-card">
   
   <!-- chemkis -->
