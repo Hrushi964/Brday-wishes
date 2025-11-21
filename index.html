@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Birthday Wishes – Sir</title>
+<!-- Import Confetti Library -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<style>
+  body {
+    margin:0;
+    background:#0b0f1a;
+    font-family: Arial, sans-serif;
+    color:#f5f5f5;
+    display:flex;
+    justify-content:center;
+    align-items: center;
+    padding:20px;
+    min-height: 100vh;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .card {
+    max-width: 1000px;
+    width:100%;
+    background:#111726;
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:14px;
+    padding:40px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.4);
+    position: relative;
+    overflow: hidden;
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* --- VIEW 1: TEXT AND CAKE --- */
+  #initial-view {
+    width: 100%;
+    transition: opacity 1s ease, transform 1s ease;
+  }
+  
+  .fade-out-scene {
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+  }
+
+  .text-section { flex: 1; text-align: left; }
+  .image-section { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; }
+
+  h1 { color:#d8b44a; margin-top:0; line-height: 1.2; }
+  .message { font-size:18px; line-height:1.6; margin-bottom: 20px; color: #e0e0e0; }
+  
+  .cake-wrapper { position: relative; display: inline-block; max-width: 100%; width: 350px; }
+  .cake-photo { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.6); display: block; }
+
+  /* CANDLE & FLAME */
+  .candle-container {
+    position: absolute;
+    top: 18%; 
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px; height: 60px; z-index: 10;
+  }
+  
+  .candle-stick {
+    width: 6px; height: 40px;
+    background: repeating-linear-gradient(45deg, #fdf5e6, #fdf5e6 5px, #e6ddc5 5px, #e6ddc5 8px);
+    margin: 0 auto; border-radius: 3px; position: relative; top: 20px;
+    box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+  }
+
+  .flame {
+    width: 8px; height: 20px;
+    background: radial-gradient(ellipse at bottom, #ffd700, #ffa500, #ff4500);
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    position: absolute; top: 1px; left: 48%; transform: translateX(-50%);
+    box-shadow: 0 0 10px #ffd700, 0 0 20px #ffa500;
+    animation: flicker 0.1s infinite alternate;
+    transition: opacity 0.5s ease;
+    transform-origin: center bottom;
+  }
+  @keyframes flicker {
+    0% { transform: translateX(-50%) scale(1); opacity: 0.9; }
+    100% { transform: translateX(-50%) scale(1.1); opacity: 1; }
+  }
+  .flame.out { opacity: 0; animation: none; }
+
+  .note { margin-top:15px; font-size:13px; color:#9aa7b6; }
+  
+  #start-btn {
+    background: #d8b44a; color: #111726; border: none; padding: 12px 25px;
+    border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 20px; font-size: 14px;
+    transition: background 0.3s;
+  }
+  #start-btn:hover { background: #c5a23d; }
+
+  /* --- VIEW 2: FINAL ANIMATION --- */
+  #final-view {
+    display: none;
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+  }
+
+  /* Container for Text and Pots */
+  .celebration-layout {
+    display: flex;
+    align-items: flex-end; /* Align pots to bottom of text */
+    justify-content: center;
+    gap: 30px; /* Space between pots and text */
+    position: relative;
+    z-index: 30;
+  }
+
+  .text-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .pop-text {
+    font-weight: 900;
+    text-transform: uppercase;
+    opacity: 0;
+    margin: 5px 0;
+    text-shadow: 0 0 10px rgba(216, 180, 74, 0.3);
+    text-align: center;
+  }
+
+  .txt-1 { color: #fff; font-size: 1.5rem; letter-spacing: 2px; }
+  .txt-2 { color: #d8b44a; font-size: 3.5rem; letter-spacing: 1px; line-height: 1.1; }
+  .txt-3 { color: #f5f5f5; font-size: 2rem; letter-spacing: 1px; margin-top: 15px; }
+
+  /* FLOWER POT STYLES */
+  .flower-pot {
+    width: 40px;
+    height: 50px;
+    background: linear-gradient(to right, #b8860b, #ffd700, #b8860b);
+    clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+    position: relative;
+    opacity: 0; /* Hidden until animation starts */
+    transition: opacity 0.5s;
+  }
+  /* Fuse visual */
+  .flower-pot::before {
+    content: '';
+    position: absolute;
+    top: -10px; left: 50%; transform: translateX(-50%);
+    width: 2px; height: 10px; background: #fff;
+  }
+
+  /* Animations Classes */
+  .anim-top-left { animation: flyInTopLeft 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+  @keyframes flyInTopLeft {
+    0% { transform: translate(-100vw, -100vh) rotate(-20deg); opacity: 0; }
+    100% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  }
+
+  .anim-top-right { animation: flyInTopRight 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; animation-delay: 0.3s; }
+  @keyframes flyInTopRight {
+    0% { transform: translate(100vw, -100vh) rotate(20deg); opacity: 0; }
+    100% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  }
+
+  .anim-bottom { animation: flyInBottom 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; animation-delay: 0.8s; }
+  @keyframes flyInBottom {
+    0% { transform: translate(0, 100vh) scale(0.5); opacity: 0; }
+    100% { transform: translate(0, 0) scale(1); opacity: 1; }
+  }
+
+  /* BALLOON STYLES */
+  .balloon {
+    position: absolute;
+    bottom: -100px; 
+    width: 35px; height: 45px;
+    border-radius: 50%;
+    z-index: 25;
+    opacity: 0.9;
+    box-shadow: inset -3px -3px 10px rgba(0,0,0,0.3);
+  }
+  .balloon::after {
+    content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+    width: 2px; height: 25px; background: rgba(255,255,255,0.5);
+  }
+  @keyframes fallDown {
+    0% { transform: translateY(-120vh); opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+  }
+
+  @media (max-width: 768px) {
+    .row { flex-direction: column; gap: 30px; }
+    .text-section { text-align: center; }
+    .cake-wrapper { width: 100%; max-width: 300px; }
+    /* Adjust layout for phone to stack pots or shrink them */
+    .celebration-layout { gap: 10px; }
+    .flower-pot { width: 25px; height: 35px; }
+    .txt-1 { font-size: 1rem; }
+    .txt-2 { font-size: 1.8rem; }
+    .txt-3 { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card" id="main-card">
+  
+  <!-- VIEW 1: INITIAL CONTENT -->
+  <div id="initial-view">
+    <div class="row">
+      <div class="text-section">
+        <h1>Best Wishes on Your Birthday, <br><span style="color:#d8b44a">Sir Lokesh Jella</span></h1>
+        <p class="message">
+          Sir, I wish you a happy birthday. Thank you for your consistent guidance and for fostering a results-driven,
+          supportive environment. Your professionalism and commitment inspire the team daily.
+          Wishing you a year of continued achievements, good health, and meaningful progress in all your endeavors.
+        </p>
+
+        <button id="start-btn" onclick="initMic()">Enable Microphone to Blow Candle</button>
+      </div>
+
+      <div class="image-section">
+        <div class="cake-wrapper">
+          <img src="images/cake.png" alt="Birthday Cake" class="cake-photo">
+          
+          <div class="candle-container">
+            <div id="flame" class="flame"></div>
+            <div class="candle-stick"></div>
+          </div>
+        </div>
+        <p class="note">Blow into the microphone to extinguish the candle</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 2: FINAL CELEBRATION -->
+  <div id="final-view">
+    
+    <!-- Container to hold Pots and Text side-by-side -->
+    <div class="celebration-layout">
+        <!-- Left Pot -->
+        <div id="pot-left" class="flower-pot"></div>
+
+        <!-- Text Center -->
+        <div class="text-group">
+            <div class="pop-text txt-1" id="msg-1">ONCE AGAIN</div>
+            <div class="pop-text txt-2" id="msg-2">HAPPY BIRTHDAY</div>
+            <div class="pop-text txt-3" id="msg-3">TO YOU SIR</div>
+        </div>
+
+        <!-- Right Pot -->
+        <div id="pot-right" class="flower-pot"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+let audioContext;
+let analyser;
+let dataArray;
+let mic;
+let isListening = false;
+let blowConsistentCount = 0; // To track sustained blowing
+
+async function initMic() {
+  if (isListening) return;
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const source = audioContext.createMediaStreamSource(mic);
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 512;
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+    source.connect(analyser);
+    isListening = true;
+    document.getElementById('start-btn').style.display = 'none'; 
+    detectBlow();
+  } catch (e) {
+    console.error(e);
+    alert("Microphone access denied. Please allow microphone permissions.");
+  }
+}
+
+/* 
+   UPDATED SENSITIVITY LOGIC:
+   1. Increased Threshold to 125 (requires louder sound).
+   2. Added 'blowConsistentCount': Sound must be loud for 5 consecutive frames 
+      to filter out sudden claps/background noise.
+*/
+function detectBlow() {
+  requestAnimationFrame(detectBlow);
+  analyser.getByteFrequencyData(dataArray);
+  const volume = dataArray.reduce((a,b)=>a+b) / dataArray.length;
+  
+  // Threshold increased from 60 to 125
+  if(volume > 125) { 
+      blowConsistentCount++;
+  } else {
+      blowConsistentCount = 0; // Reset if sound drops
+  }
+
+  // If sustained for ~5 frames (approx 100ms), trigger blow
+  if (blowConsistentCount > 5) {
+      blowCandle();
+  }
+}
+
+function blowCandle() {
+  const flame = document.getElementById("flame");
+  if(flame.classList.contains('out')) return;
+
+  // 1. Extinguish flame
+  flame.classList.add('out');
+
+  // 2. Wait 1 second, then fade out the current card
+  setTimeout(() => {
+    const initialView = document.getElementById('initial-view');
+    initialView.classList.add('fade-out-scene');
+
+    // 3. Wait for fade out to complete, then show new view
+    setTimeout(() => {
+        initialView.style.display = 'none';
+        
+        const finalView = document.getElementById('final-view');
+        finalView.style.display = 'flex'; 
+
+        // Trigger Text Animations
+        document.getElementById('msg-1').classList.add('anim-top-left');
+        document.getElementById('msg-2').classList.add('anim-top-right');
+        document.getElementById('msg-3').classList.add('anim-bottom');
+
+        // Trigger Falling Balloons
+        startBalloons();
+
+        // Trigger Flowerpots (Delay: 2.0s so text is visible first)
+        setTimeout(() => {
+            // Show the pots
+            document.getElementById('pot-left').style.opacity = '1';
+            document.getElementById('pot-right').style.opacity = '1';
+            
+            // Fire sparks
+            fireSourceCrackers();
+        }, 2000);
+
+    }, 800); 
+
+  }, 1000);
+}
+
+/* --- BALLOONS FALLING FROM TOP --- */
+function startBalloons() {
+    const colors = ['#ff4d4d', '#4dff4d', '#4d4dff', '#ffff4d', '#ff4dff', '#4dffff', '#d8b44a'];
+    const container = document.getElementById('final-view');
+    
+    for(let i=0; i<30; i++) {
+        const b = document.createElement('div');
+        b.classList.add('balloon');
+        b.style.background = colors[Math.floor(Math.random()*colors.length)];
+        b.style.left = Math.random() * 90 + '%'; 
+        b.style.animation = `fallDown ${Math.random()*2 + 3}s linear forwards`; 
+        b.style.top = '-100px';
+        
+        setTimeout(() => {
+            container.appendChild(b);
+        }, Math.random() * 2000);
+    }
+}
+
+/* --- FLOWERPOT CRACKERS (Positioned accurately) --- */
+function fireSourceCrackers() {
+    // 1. Get position of the Left Pot
+    const potLeft = document.getElementById('pot-left').getBoundingClientRect();
+    const potRight = document.getElementById('pot-right').getBoundingClientRect();
+    
+    // 2. Calculate normalized X/Y (0 to 1) for the library
+    // We add width/2 to X to shoot from center of pot
+    const leftX = (potLeft.left + potLeft.width / 2) / window.innerWidth;
+    const leftY = (potLeft.top) / window.innerHeight; // Shoot from top of pot
+
+    const rightX = (potRight.left + potRight.width / 2) / window.innerWidth;
+    const rightY = (potRight.top) / window.innerHeight;
+
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 45, spread: 60, ticks: 100, zIndex: 100, gravity: 1.2 };
+
+    const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+            return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+
+        // Left Fountain
+        confetti(Object.assign({}, defaults, { 
+            particleCount,
+            origin: { x: leftX, y: leftY },
+            colors: ['#FFD700', '#FFA500', '#fff'],
+            angle: 90, // Straight up
+            drift: 0
+        }));
+
+        // Right Fountain
+        confetti(Object.assign({}, defaults, { 
+            particleCount,
+            origin: { x: rightX, y: rightY },
+            colors: ['#FFD700', '#FFA500', '#fff'],
+            angle: 90, // Straight up
+            drift: 0
+        }));
+
+    }, 100);
+}
+</script>
+</body>
+</html>
